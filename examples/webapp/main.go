@@ -7,8 +7,6 @@ import (
 	"net/http"
 
 	"github.com/ascarter/conductor"
-	"github.com/ascarter/conductor/components/logging"
-	"github.com/ascarter/conductor/components/requestid"
 )
 
 func mw(h http.Handler) http.Handler {
@@ -33,8 +31,8 @@ func main() {
 	app := conductor.NewApp()
 
 	// Define middleware
-	app.Use(requestid.RequestIDComponent)
-	app.Use(logging.DefaultLoggingComponent)
+	app.Use(conductor.RequestIDComponent)
+	app.Use(conductor.DefaultRequestLogComponent)
 	app.Use(conductor.ComponentFunc(mw))
 
 	// Add handlers
@@ -42,8 +40,7 @@ func main() {
 	app.HandleFunc("/goodbye", goodbyeHandler)
 
 	// Start server
-
-	//	log.Fatal(app.ListenAndServe())
-
-	log.Fatal(http.ListenAndServe(":8080", app))
+	addr := ":8080"
+	log.Printf("Starting server on %s...", addr)
+	log.Fatal(http.ListenAndServe(addr, app))
 }

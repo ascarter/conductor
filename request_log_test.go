@@ -1,4 +1,4 @@
-package logging
+package conductor
 
 import (
 	"bytes"
@@ -10,8 +10,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/ascarter/conductor"
 )
 
 var (
@@ -30,7 +28,7 @@ func TestLogHandler(t *testing.T) {
 		fmt.Fprintln(w, expected)
 	}
 
-	h := LoggingHandler(http.HandlerFunc(fn), logger)
+	h := RequestLogHandler(http.HandlerFunc(fn), logger)
 
 	req, err := http.NewRequest("GET", "http://example.com/foo", nil)
 	if err != nil {
@@ -66,7 +64,7 @@ func TestLogHandler(t *testing.T) {
 	}
 }
 
-func TestApp(t *testing.T) {
+func TestLogApp(t *testing.T) {
 	expected := "testrequest"
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
@@ -77,8 +75,8 @@ func TestApp(t *testing.T) {
 	var b bytes.Buffer
 	logger := log.New(&b, "", log.LstdFlags)
 
-	app := conductor.NewApp()
-	app.Use(LoggingComponent(logger))
+	app := NewApp()
+	app.Use(RequestLogComponent(logger))
 	app.HandleFunc("/", fn)
 
 	server := httptest.NewServer(app)

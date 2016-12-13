@@ -1,4 +1,4 @@
-package requestid
+package conductor
 
 import (
 	"fmt"
@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/ascarter/conductor"
 )
 
 var validRequestID = regexp.MustCompile(`([a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}?)`)
@@ -33,7 +31,6 @@ func TestRequestID(t *testing.T) {
 
 		if rid != "" {
 			// Pre-set request ID
-			t.Logf("Setting request header: %s", rid)
 			req.Header.Set("X-Request-ID", rid)
 		}
 
@@ -56,14 +53,14 @@ func TestRequestID(t *testing.T) {
 	}
 }
 
-func TestApp(t *testing.T) {
+func TestRequestApp(t *testing.T) {
 	expected := "testrequest"
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "%s,%s", r.Header.Get("X-Request-ID"), expected)
 	}
 
-	app := conductor.NewApp()
+	app := NewApp()
 	app.Use(RequestIDComponent)
 	app.HandleFunc("/", fn)
 

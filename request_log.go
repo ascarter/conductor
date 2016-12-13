@@ -1,4 +1,4 @@
-package logging
+package conductor
 
 import (
 	"fmt"
@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/ascarter/conductor"
 )
 
 type responseLogger struct {
@@ -48,8 +46,8 @@ type LoggerOutput interface {
 	Printf(string, ...interface{})
 }
 
-// LoggingHandler wraps h with start/complete log lines including timing
-func LoggingHandler(h http.Handler, logger LoggerOutput) http.Handler {
+// RequestLogHandler logs request with start/complete log lines including timing
+func RequestLogHandler(h http.Handler, logger LoggerOutput) http.Handler {
 	if logger == nil {
 		// Emulate standard logger
 		logger = log.New(os.Stderr, "", log.LstdFlags)
@@ -75,16 +73,16 @@ func LoggingHandler(h http.Handler, logger LoggerOutput) http.Handler {
 	})
 }
 
-// LoggingComponent returns a LoggingHandler as a Component
-func LoggingComponent(logger LoggerOutput) conductor.Component {
-	return conductor.ComponentFunc(func(h http.Handler) http.Handler {
-		return LoggingHandler(h, logger)
+// RequestLogComponent returns a RequestLogHandler as a Component
+func RequestLogComponent(logger LoggerOutput) Component {
+	return ComponentFunc(func(h http.Handler) http.Handler {
+		return RequestLogHandler(h, logger)
 	})
 }
 
 var (
-	DefaultLoggingComponent = LoggingComponent(nil)
-	DefaultLoggingHandler   = func(h http.Handler) http.Handler {
-		return LoggingHandler(h, nil)
+	DefaultRequestLogComponent = RequestLogComponent(nil)
+	DefaultRequestLogHandler   = func(h http.Handler) http.Handler {
+		return RequestLogHandler(h, nil)
 	}
 )

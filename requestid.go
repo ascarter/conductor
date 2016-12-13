@@ -1,15 +1,13 @@
-package requestid
+package conductor
 
 import (
 	"context"
 	"net/http"
-
-	"github.com/ascarter/conductor"
 )
 
 type ridKey string
 
-const requestIDKey ridKey = "github.com/ascarter/conductor/components/RequestID"
+const requestIDKey ridKey = "github.com/ascarter/conductor/RequestID"
 
 // newContextWithRequestID creates a context with request id set to
 // X-Request-ID header or generates a new unique ID
@@ -37,4 +35,4 @@ func RequestIDHandler(h http.Handler) http.Handler {
 }
 
 // RequestIDComponent returns a RequestIDHandler as a component
-var RequestIDComponent = conductor.ComponentFunc(RequestIDHandler)
+var RequestIDComponent = ComponentFunc(RequestIDHandler)

@@ -11,7 +11,7 @@ type Component interface {
 // a App component
 type ComponentFunc func(http.Handler) http.Handler
 
-// Next calls f(h)
+// Next calls CompenentFunc passing in handler h
 func (f ComponentFunc) Next(h http.Handler) http.Handler {
 	return f(h)
 }

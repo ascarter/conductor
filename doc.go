@@ -4,8 +4,8 @@ Package conductor provides a library of web application utilities.
 Create a new App instance and define middleware components:
 
 	app := conductor.NewApp()
-	app.Use(requestid.RequestIDComponent)
-	app.Use(logging.DefaultLoggingComponent)
+	app.Use(conductor.RequestIDComponent)
+	app.Use(conductor.DefaultRequestLogComponent)
 	app.Use(conductor.ComponentFunc(myMiddlwareHandler))
 
 An App instance is ServeMux compatible Handler. Register routes to App:

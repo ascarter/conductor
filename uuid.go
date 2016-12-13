@@ -1,7 +1,7 @@
 // UUID generator for RFC 4122
 // Reference: http://www.ietf.org/rfc/rfc4122.txt
 
-package requestid
+package conductor
 
 import (
 	"crypto/rand"

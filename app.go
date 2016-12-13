@@ -36,12 +36,6 @@ func (app *App) HandleFunc(pattern string, handler http.HandlerFunc) {
 	app.Handle(pattern, http.HandlerFunc(handler))
 }
 
-// HandleView registers the a handler for view anchored at pattern.
-// Handler is run using the middleware stack
-//func (app *App) HandleView(pattern, View) {
-//	// TODO: Wrap view handler...
-//}
-
 // ServeHTTP dispatches the request to the app mux
 func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	app.mux.ServeHTTP(w, r)
