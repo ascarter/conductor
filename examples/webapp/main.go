@@ -30,7 +30,7 @@ func goodbyeHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	app := conductor.NewApp()
 
-	// Define middleware
+	// Define middleware in order
 	app.Use(conductor.RequestIDComponent)
 	app.Use(conductor.DefaultRequestLogComponent)
 	app.Use(conductor.ComponentFunc(mw))
