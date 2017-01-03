@@ -51,22 +51,21 @@ type regexpHandler struct {
 }
 
 func (rh *regexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var err error
-
 	// Find routes for HTTP method
 	routes, ok := rh.routes[r.Method]
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}
 
-	if ok {
-		for _, route := range routes {
-			if route.Pattern.MatchString(r.URL.Path) {
-				route.Handler(w, r)
-				return
-			}
+	for _, route := range routes {
+		if route.Pattern.MatchString(r.URL.Path) {
+			route.Handler(w, r)
+			return
 		}
 	}
 
 	// No matching route found
-	http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 }
 
 // RegexpHandler returns a request handler that

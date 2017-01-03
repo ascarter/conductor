@@ -1,6 +1,9 @@
 package conductor
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -53,23 +56,31 @@ func TestRegexpHandler(t *testing.T) {
 		},
 	}
 
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "OK")
+	})
+
 	// Create RESTful /posts resource
 	routes := RegexpRouteMap{}
-	routes.AddRoute(http.MethodGet, `/posts[/]?$`, indexHandler)
-	routes.AddRoute(http.MethodGet, `/posts/[0-9]+$`, showHandler)
-	routes.AddRoute(http.MethodPost, `/posts[/]?$`, createHandler)
-	routes.AddRoute(http.MethodPut, `/posts/[0-9]+$`, updateHandler)
-	routes.AddRoute(http.MethodDelete, `/posts/[0-9]+$`, destroyHandler)
-	handler := RegexpHandler(routes)
+	routes.AddRoute(http.MethodGet, `/posts[/]?$`, handler)
+	routes.AddRoute(http.MethodGet, `/posts/[0-9]+$`, handler)
+	routes.AddRoute(http.MethodPost, `/posts[/]?$`, handler)
+	routes.AddRoute(http.MethodPut, `/posts/[0-9]+$`, handler)
+	routes.AddRoute(http.MethodDelete, `/posts/[0-9]+$`, handler)
+	rh := RegexpHandler(routes)
 
 	for _, tc := range testcases {
-		req, err := http.NewRequest(tc.Method, tc.Path, tc.Body)
+		body, err := json.Marshal(tc.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req, err := http.NewRequest(tc.Method, tc.Path, bytes.NewBuffer(body))
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
+		rh.ServeHTTP(w, req)
 
 		if status := w.Code; status != tc.Status {
 			t.Errorf("handler status code %v, expected %v", status, tc.Status)
