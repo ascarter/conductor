@@ -1,19 +1,35 @@
 package conductor
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"regexp"
 )
 
+type reKey string
+
+const regexpMatchKey reKey = "github.com/ascarter/conductor/RegexpRouteMatchKey"
+
+// newContextWithRegexpMatch creates context with regular expression matches
+func newContextWithRegexpMatch(ctx context.Context, matches []string) context.Context {
+	return context.WithValue(ctx, regexpMatchKey, matches)
+}
+
+// RegexpMatchesFromContext returns slice of regular expression matches from context if any
+func RegexpMatchesFromContext(ctx context.Context) ([]string, bool) {
+	matches, ok := ctx.Value(regexpMatchKey).([]string)
+	return matches, ok
+}
+
 // A RegexpRoute defines the Handler for a regular expression Pattern
 type RegexpRoute struct {
 	Pattern *regexp.Regexp
-	Handler http.HandlerFunc
+	Handler http.Handler
 }
 
 // NewRegexpRoute returns a RegexpRoute for a pattern to a handler
-func NewRegexpRoute(pattern string, handler http.HandlerFunc) (*RegexpRoute, error) {
+func NewRegexpRoute(pattern string, handler http.Handler) (*RegexpRoute, error) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, err
@@ -25,12 +41,12 @@ func NewRegexpRoute(pattern string, handler http.HandlerFunc) (*RegexpRoute, err
 //
 // Example:
 //	routes := RegexpRouteMap{}
-//	routes.AddRoute(http.MethodGet, RegexpRoute{`/posts[/]?$`, handleGetAllPosts})
-//	routes.AddRoute(http.MethodGet, RegexpRoute{`/posts/[0-9]+$`, handleGetPost})
+//	routes.AddRouteFunc(http.MethodGet, `/posts[/]?$`, handleGetAllPosts)
+//	routes.AddRoute(http.MethodGet, `/posts/[0-9]+$`, postHandler)
 type RegexpRouteMap map[string][]*RegexpRoute
 
-// AddRoute attaches route to map for http method
-func (m RegexpRouteMap) AddRoute(method, pattern string, handler http.HandlerFunc) error {
+// AddRoute defines route for HTTP method and pattern to handler
+func (m RegexpRouteMap) AddRoute(method, pattern string, handler http.Handler) error {
 	route, err := NewRegexpRoute(pattern, handler)
 	if err != nil {
 		return err
@@ -46,6 +62,11 @@ func (m RegexpRouteMap) AddRoute(method, pattern string, handler http.HandlerFun
 	return nil
 }
 
+// AddRouteFunc defines route for HTTP method and pattern to handler func
+func (m RegexpRouteMap) AddRouteFunc(method, pattern string, fn http.HandlerFunc) error {
+	return m.AddRoute(method, pattern, http.HandlerFunc(fn))
+}
+
 type regexpHandler struct {
 	routes RegexpRouteMap
 }
@@ -59,7 +80,9 @@ func (rh *regexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for _, route := range routes {
 		if route.Pattern.MatchString(r.URL.Path) {
-			route.Handler(w, r)
+			matches := route.Pattern.FindStringSubmatch(r.URL.Path)
+			ctx := newContextWithRegexpMatch(r.Context(), matches)
+			route.Handler.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
 	}
