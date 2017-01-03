@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -51,13 +53,13 @@ func TestRegexpHandler(t *testing.T) {
 		},
 		{
 			Method: http.MethodGet,
-			Path:   "posts/23/comments",
+			Path:   "/posts/23/comments",
 			Status: http.StatusNotFound,
 		},
 	}
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "OK")
+		fmt.Fprintln(w, html.EscapeString(r.URL.Path))
 	})
 
 	// Create RESTful /posts resource
@@ -82,8 +84,22 @@ func TestRegexpHandler(t *testing.T) {
 		w := httptest.NewRecorder()
 		rh.ServeHTTP(w, req)
 
-		if status := w.Code; status != tc.Status {
+		data := strings.TrimSpace(w.Body.String())
+		status := w.Code
+
+		if status != tc.Status {
 			t.Errorf("handler status code %v, expected %v", status, tc.Status)
+		}
+
+		switch status {
+		default:
+			if data != http.StatusText(tc.Status) {
+				t.Errorf("handler error %s, expected %s", data, http.StatusText(tc.Status))
+			}
+		case http.StatusOK:
+			if data != tc.Path {
+				t.Errorf("handler path %s, expected %s", data, tc.Path)
+			}
 		}
 	}
 }
