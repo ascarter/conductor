@@ -84,7 +84,7 @@ var (
 	// DefaultRequestLogComponent is RequestLogComponent that logs to stderr
 	DefaultRequestLogComponent = RequestLogComponent(nil)
 	// DefaultRequestLogHandler is a http.Handler that logs to stderr
-	DefaultRequestLogHandler   = func(h http.Handler) http.Handler {
+	DefaultRequestLogHandler = func(h http.Handler) http.Handler {
 		return RequestLogHandler(h, nil)
 	}
 )
