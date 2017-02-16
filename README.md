@@ -62,3 +62,5 @@ func main() {
 * [Joe Shaw - Revisiting context and http.Handler for Go 1.7](https://joeshaw.org/revisiting-context-and-http-handler-for-go-17/)
 * [alice by justinas](https://github.com/justinas/alice)
 * [Ruby on Rails](http://rubyonrails.org)
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/ascarter/conductor)](https://goreportcard.com/report/github.com/ascarter/conductor)
