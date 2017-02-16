@@ -41,7 +41,7 @@ func (r *responseLogger) Size() int {
 	return r.size
 }
 
-// A LoggerOuput is a stdlib compatible interface for logging
+// A LoggerOutput handles logging output
 type LoggerOutput interface {
 	Printf(string, ...interface{})
 }
@@ -81,7 +81,9 @@ func RequestLogComponent(logger LoggerOutput) Component {
 }
 
 var (
+	// DefaultRequestLogComponent is RequestLogComponent that logs to stderr
 	DefaultRequestLogComponent = RequestLogComponent(nil)
+	// DefaultRequestLogHandler is a http.Handler that logs to stderr
 	DefaultRequestLogHandler   = func(h http.Handler) http.Handler {
 		return RequestLogHandler(h, nil)
 	}
