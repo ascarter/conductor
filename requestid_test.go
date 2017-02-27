@@ -60,7 +60,7 @@ func TestRequestApp(t *testing.T) {
 		fmt.Fprintf(w, "%s,%s", r.Header.Get("X-Request-ID"), expected)
 	}
 
-	app := NewApp()
+	app := NewRouter()
 	app.Use(RequestIDComponent)
 	app.HandleFunc("/", fn)
 

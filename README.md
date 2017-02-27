@@ -1,6 +1,10 @@
 # conductor
 
-Conductor is a web application library for Go. It provides some helpers for wiring middleware. It draws some inspiration from how [Ruby on Rails](http://rubyonrails.org) applications are structured.
+Conductor is an HTTP routing and handling library for Go. It provides structure for
+stacking middleware components and handling routes based on named paramters and regular
+expressions in addition to default standard library handlers.
+
+It draws some inspiration from how [Ruby on Rails](http://rubyonrails.org) applications are structured.
 
 ## Usage:
 
@@ -36,21 +40,21 @@ func goodbyeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	app := conductor.NewApp()
+	router := conductor.NewRouter()
 
 	// Define middleware in order
-	app.Use(conductor.RequestIDComponent)
-	app.Use(conductor.DefaultRequestLogComponent)
-	app.Use(conductor.ComponentFunc(mw))
+	router.Use(conductor.RequestIDComponent)
+	router.Use(conductor.DefaultRequestLogComponent)
+	router.Use(conductor.ComponentFunc(mw))
 
 	// Add handlers
-	app.HandleFunc("/hello", helloHandler)
-	app.HandleFunc("/goodbye", goodbyeHandler)
+	router.HandleFunc("/hello", helloHandler)
+	router.HandleFunc("/goodbye", goodbyeHandler)
 
 	// Start server
 	addr := ":8080"
 	log.Printf("Starting server on %s...", addr)
-	log.Fatal(http.ListenAndServe(addr, app))
+	log.Fatal(http.ListenAndServe(addr, router))
 }
 
 ```

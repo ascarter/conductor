@@ -1,21 +1,21 @@
 /*
 Package conductor provides a library of web application utilities.
 
-Create a new App instance and define middleware components:
+Create a new Router instance and define middleware components:
 
-	app := conductor.NewApp()
-	app.Use(conductor.RequestIDComponent)
-	app.Use(conductor.DefaultRequestLogComponent)
-	app.Use(conductor.ComponentFunc(myMiddlwareHandler))
+	router := conductor.NewRouter()
+	router.Use(conductor.RequestIDComponent)
+	router.Use(conductor.DefaultRequestLogComponent)
+	router.Use(conductor.ComponentFunc(myMiddlwareHandler))
 
-An App instance is ServeMux compatible Handler. Register routes to App:
+A Router instance is ServeMux compatible Handler. Register routes to Router:
 
 	// Static resources
 	files := http.FileServer(http.Dir("./assets"))
-	app.Handle("/static/", http.StripPrefix("/static/", files))
+	router.Handle("/static/", http.StripPrefix("/static/", files))
 
 	// Handler func
-	app.HandleFunc("/hello", helloHandler)
+	router.HandleFunc("/hello", helloHandler)
 
 
 Run server via ListenAndServe:

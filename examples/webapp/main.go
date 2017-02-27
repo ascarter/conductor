@@ -49,24 +49,24 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	app := conductor.NewApp()
+	router := conductor.NewRouter()
 
 	// Define middleware in order
-	app.Use(conductor.RequestIDComponent)
-	app.Use(conductor.DefaultRequestLogComponent)
-	app.Use(conductor.ComponentFunc(mw))
+	router.Use(conductor.RequestIDComponent)
+	router.Use(conductor.DefaultRequestLogComponent)
+	router.Use(conductor.ComponentFunc(mw))
 
 	// Add handlers
-	app.HandleFunc("/hello", helloHandler)
-	app.HandleFunc("/goodbye", goodbyeHandler)
+	router.HandleFunc("/hello", helloHandler)
+	router.HandleFunc("/goodbye", goodbyeHandler)
 
 	// Add pattern route
 	listRoutes := conductor.RegexpRouteMap{}
 	listRoutes.AddRouteFunc(http.MethodGet, `/list/([0-9]+)$`, listHandler)
-	app.Handle("/list/", conductor.RegexpHandler(listRoutes))
+	router.Handle("/list/", conductor.RegexpHandler(listRoutes))
 
 	// Start server
 	addr := ":8080"
 	log.Printf("Starting server on %s...", addr)
-	log.Fatal(http.ListenAndServe(addr, app))
+	log.Fatal(http.ListenAndServe(addr, router))
 }
