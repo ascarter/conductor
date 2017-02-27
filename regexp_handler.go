@@ -91,7 +91,7 @@ func (rh *regexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 }
 
-// RegexpHandler returns a request handler that
+// RegexpHandler returns a request handler that handles a RegexpRouteMap
 func RegexpHandler(routes RegexpRouteMap) http.Handler {
 	return &regexpHandler{routes}
 }

@@ -75,7 +75,7 @@ func TestLogApp(t *testing.T) {
 	var b bytes.Buffer
 	logger := log.New(&b, "", log.LstdFlags)
 
-	app := NewApp()
+	app := NewRouter()
 	app.Use(RequestLogComponent(logger))
 	app.HandleFunc("/", fn)
 

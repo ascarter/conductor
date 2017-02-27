@@ -20,26 +20,26 @@ func (fm *fakeMiddleware) Next(h http.Handler) http.Handler {
 	})
 }
 
-func TestNewApp(t *testing.T) {
-	app := NewApp()
-	app.Use(&fakeMiddleware{1})
-	app.Use(&fakeMiddleware{2})
-	if len(app.components) != 2 {
-		t.Error("NewApp did not add all handlers")
+func TestNewRouter(t *testing.T) {
+	router := NewRouter()
+	router.Use(&fakeMiddleware{1})
+	router.Use(&fakeMiddleware{2})
+	if len(router.components) != 2 {
+		t.Error("NewRouter did not add all handlers")
 	}
 }
 
-func TestDefaultApp(t *testing.T) {
+func TestDefaultRouter(t *testing.T) {
 	expected := "testrequest"
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, expected)
 	}
 
-	app := NewApp()
-	app.HandleFunc("/", fn)
+	router := NewRouter()
+	router.HandleFunc("/", fn)
 
-	server := httptest.NewServer(app)
+	server := httptest.NewServer(router)
 	defer server.Close()
 
 	res, err := http.Get(server.URL)
@@ -73,11 +73,11 @@ func TestUse(t *testing.T) {
 		})
 	}
 
-	app := NewApp()
-	app.Use(ComponentFunc(mod))
-	app.HandleFunc("/", fn)
+	router := NewRouter()
+	router.Use(ComponentFunc(mod))
+	router.HandleFunc("/", fn)
 
-	server := httptest.NewServer(app)
+	server := httptest.NewServer(router)
 	defer server.Close()
 
 	res, err := http.Get(server.URL)
