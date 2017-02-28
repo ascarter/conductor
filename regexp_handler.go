@@ -2,9 +2,9 @@ package conductor
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"regexp"
+	"sync"
 )
 
 type reKey string
@@ -22,76 +22,128 @@ func RegexpMatchesFromContext(ctx context.Context) ([]string, bool) {
 	return matches, ok
 }
 
-// A RegexpRoute defines the Handler for a regular expression Pattern
-type RegexpRoute struct {
-	Pattern *regexp.Regexp
-	Handler http.Handler
-}
-
-// NewRegexpRoute returns a RegexpRoute for a pattern to a handler
-func NewRegexpRoute(pattern string, handler http.Handler) (*RegexpRoute, error) {
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return nil, err
-	}
-	return &RegexpRoute{re, handler}, nil
-}
-
-// A RegexpRouteMap associates HTTP methods to slices of RegexpRoutes
+// A RegexpMux is an HTTP request multiplexer for regular expression patterns.
+// It matches URL of each incoming request against a list of registered regular
+// expressions and calls the handler for best pattern match.
 //
-// Example:
-//	routes := RegexpRouteMap{}
-//	routes.AddRouteFunc(http.MethodGet, `/posts[/]?$`, handleGetAllPosts)
-//	routes.AddRoute(http.MethodGet, `/posts/[0-9]+$`, postHandler)
-type RegexpRouteMap map[string][]*RegexpRoute
-
-// AddRoute defines route for HTTP method and pattern to handler
-func (m RegexpRouteMap) AddRoute(method, pattern string, handler http.Handler) error {
-	route, err := NewRegexpRoute(pattern, handler)
-	if err != nil {
-		return err
-	}
-
-	switch method {
-	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace:
-		m[method] = append(m[method], route)
-	default:
-		return errors.New("invalid HTTP method")
-	}
-
-	return nil
+// Patterns are regular expressions. Longer patterns take precedence over shorter
+// ones. If there are patterns that match both "/images\/.*" and "/images/thumbnails\/.*"
+// the path "/images/thumbnails" would use the later handler.
+//
+// Patterns may optionally begin with a host name, restricting matches to URLs on that
+// host only. Host specific patterns take precedence over general patterns.
+//
+// RegexpMux follows the general approach used by http.ServeMux.
+type RegexpMux struct {
+	mu    sync.RWMutex
+	m     map[string]regexpMuxEntry
+	hosts bool
 }
 
-// AddRouteFunc defines route for HTTP method and pattern to handler func
-func (m RegexpRouteMap) AddRouteFunc(method, pattern string, fn http.HandlerFunc) error {
-	return m.AddRoute(method, pattern, http.HandlerFunc(fn))
+type regexpMuxEntry struct {
+	h       http.Handler
+	pattern *regexp.Regexp
 }
 
-type regexpHandler struct {
-	routes RegexpRouteMap
+// NewRegexpMux allocates and returns a new RegexpMux.
+func NewRegexpMux() *RegexpMux {
+	return new(RegexpMux)
 }
 
-func (rh *regexpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Find routes for HTTP method
-	routes, ok := rh.routes[r.Method]
-	if !ok {
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-	}
+// match finds the best regular expression match for the method and path.
+func (mux *RegexpMux) match(path string) (h http.Handler, pattern string) {
+	var n = 0
+	for k, v := range mux.m {
+		if !v.pattern.MatchString(path) {
+			continue
+		}
 
-	for _, route := range routes {
-		if route.Pattern.MatchString(r.URL.Path) {
-			matches := route.Pattern.FindStringSubmatch(r.URL.Path)
-			ctx := newContextWithRegexpMatch(r.Context(), matches)
-			route.Handler.ServeHTTP(w, r.WithContext(ctx))
-			return
+		if h == nil || len(k) > n {
+			n = len(k)
+			h = v.h
+			pattern = k
 		}
 	}
 
-	// No matching route found
-	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	return
 }
 
-// RegexpHandler returns a request handler that handles a RegexpRouteMap
-func RegexpHandler(routes RegexpRouteMap) http.Handler {
-	return &regexpHandler{routes}
+// Handler returns the handler to use for the given request, consulting r.Host
+// and r.URL.Path. It always returns a non-nil handler.
+//
+// Handler also returns the registered regular expression pattern that matches the request.
+//
+// If there is no registered handler that applies to the request, Handler returns
+// a ``page not found'' handler and an empty pattern.
+func (mux *RegexpMux) Handler(r *http.Request) (h http.Handler, pattern string) {
+	mux.mu.RLock()
+	defer mux.mu.RUnlock()
+
+	// Host-specific pattern takes precedence over generic ones
+	if mux.hosts {
+		h, pattern = mux.match(r.Host + r.URL.Path)
+	}
+
+	// If no host match, match generic patterns
+	if h == nil {
+		h, pattern = mux.match(r.URL.Path)
+	}
+
+	// No handler matches
+	if h == nil {
+		h, pattern = http.NotFoundHandler(), ""
+	}
+
+	return
+}
+
+// ServeHTTP dispatches request to the handler whose regular expression pattern most
+// closely matches the request URL.
+func (mux *RegexpMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h, pattern := mux.Handler(r)
+	entry, ok := mux.m[pattern]
+	if ok {
+		matches := entry.pattern.FindStringSubmatch(r.URL.Path)
+		ctx := newContextWithRegexpMatch(r.Context(), matches)
+		r = r.WithContext(ctx)
+	}
+	h.ServeHTTP(w, r)
+}
+
+// Handle registers the handler for a give regular expression pattern.
+//
+// If the handler already exists for pattern or the regular expression does not compile,
+// Handle panics.
+func (mux *RegexpMux) Handle(pattern string, handler http.Handler) {
+	mux.mu.Lock()
+	defer mux.mu.Unlock()
+
+	// Verify parameters
+	if pattern == "" {
+		panic("regexp mux: invalid pattern " + pattern)
+	}
+	re := regexp.MustCompile(pattern)
+
+	if handler == nil {
+		panic("regexp mux: nil handler")
+	}
+
+	if _, ok := mux.m[pattern]; ok {
+		panic("regexp mux: multiple registrations for " + pattern)
+	}
+
+	if mux.m == nil {
+		mux.m = make(map[string]regexpMuxEntry)
+	}
+
+	mux.m[pattern] = regexpMuxEntry{h: handler, pattern: re}
+
+	if pattern[0] != '/' {
+		mux.hosts = true
+	}
+}
+
+// HandleFunc registers the handler function for the given regular expression pattern.
+func (mux *RegexpMux) HandleFunc(pattern string, handler http.HandlerFunc) {
+	mux.Handle(pattern, http.HandlerFunc(handler))
 }

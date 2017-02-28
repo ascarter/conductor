@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 )
 
 type testResponse struct {
+	Method  string
 	Path    string
 	Matches []string
 }
@@ -69,7 +69,7 @@ func TestRegexpHandler(t *testing.T) {
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		response := testResponse{Path: r.URL.Path}
+		response := testResponse{Method: r.Method, Path: r.URL.Path}
 
 		matches, ok := RegexpMatchesFromContext(r.Context())
 		if ok {
@@ -84,14 +84,9 @@ func TestRegexpHandler(t *testing.T) {
 		w.Write(output)
 	}
 
-	// Create RESTful /posts resource
-	routes := RegexpRouteMap{}
-	routes.AddRouteFunc(http.MethodGet, `/posts[/]?$`, handler)
-	routes.AddRouteFunc(http.MethodGet, `/posts/([0-9]+)$`, handler)
-	routes.AddRouteFunc(http.MethodPost, `/posts[/]?$`, handler)
-	routes.AddRouteFunc(http.MethodPut, `/posts/([0-9]+)$`, handler)
-	routes.AddRouteFunc(http.MethodDelete, `/posts/([0-9]+)$`, handler)
-	rh := RegexpHandler(routes)
+	rh := NewRegexpMux()
+	rh.HandleFunc(`/posts[/]?$`, handler)
+	rh.HandleFunc(`/posts/([0-9]+)$`, handler)
 
 	for _, tc := range testcases {
 		tc := tc // capture range var
@@ -117,17 +112,15 @@ func TestRegexpHandler(t *testing.T) {
 				t.Errorf("handler status code %v, expected %v", status, tc.Status)
 			}
 
-			switch status {
-			default:
-				data := strings.TrimSpace(w.Body.String())
-				if data != http.StatusText(tc.Status) {
-					t.Errorf("handler error %s, expected %s", data, http.StatusText(tc.Status))
-				}
-			case http.StatusOK:
+			if status == http.StatusOK {
 				var data testResponse
 				err := json.Unmarshal(w.Body.Bytes(), &data)
 				if err != nil {
 					t.Fatalf("%v: %s", err, w.Body.String())
+				}
+
+				if data.Method != tc.Method {
+					t.Errorf("handler path %s method %s, expected %s", tc.Path, data.Method, tc.Method)
 				}
 
 				if data.Path != tc.Path {
