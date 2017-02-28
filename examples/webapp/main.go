@@ -27,20 +27,40 @@ func goodbyeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Goodbye, %q", html.EscapeString(r.URL.Path))
 }
 
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Running list handler")
+	matches, ok := conductor.RegexpMatchesFromContext(r.Context())
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("matches: %+v", matches)
+	count, err := strconv.Atoi(matches[1])
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	for i := 0; i < count; i++ {
+		fmt.Fprintf(w, "%d\n", i)
+	}
+}
+
 func main() {
-	router := conductor.NewRouter()
+	mux := conductor.NewRouter()
 
 	// Define middleware in order
-	router.Use(conductor.RequestIDComponent)
-	router.Use(conductor.DefaultRequestLogComponent)
-	router.Use(conductor.ComponentFunc(mw))
+	mux.Use(conductor.RequestIDComponent)
+	mux.Use(conductor.DefaultRequestLogComponent)
+	mux.Use(conductor.ComponentFunc(mw))
 
 	// Add handlers
-	router.HandleFunc("/hello", helloHandler)
-	router.HandleFunc("/goodbye", goodbyeHandler)
+	mux.HandleFunc("/hello", helloHandler)
+	mux.HandleFunc("/goodbye", goodbyeHandler)
 
 	// Start server
 	addr := ":8080"
 	log.Printf("Starting server on %s...", addr)
-	log.Fatal(http.ListenAndServe(addr, router))
+	log.Fatal(http.ListenAndServe(addr, mux))
 }
