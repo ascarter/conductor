@@ -5,7 +5,6 @@ import (
 	"html"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/ascarter/conductor"
 )
@@ -28,26 +27,6 @@ func goodbyeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Goodbye, %q", html.EscapeString(r.URL.Path))
 }
 
-func listHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Running list handler")
-	matches, ok := conductor.RegexpMatchesFromContext(r.Context())
-	if !ok {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	log.Printf("matches: %+v", matches)
-	count, err := strconv.Atoi(matches[1])
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	for i := 0; i < count; i++ {
-		fmt.Fprintf(w, "%d\n", i)
-	}
-}
-
 func main() {
 	router := conductor.NewRouter()
 
@@ -59,11 +38,6 @@ func main() {
 	// Add handlers
 	router.HandleFunc("/hello", helloHandler)
 	router.HandleFunc("/goodbye", goodbyeHandler)
-
-	// Add pattern route
-	listRoutes := conductor.RegexpRouteMap{}
-	listRoutes.AddRouteFunc(http.MethodGet, `/list/([0-9]+)$`, listHandler)
-	router.Handle("/list/", conductor.RegexpHandler(listRoutes))
 
 	// Start server
 	addr := ":8080"
