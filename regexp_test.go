@@ -16,7 +16,50 @@ type testResponse struct {
 	Matches []string
 }
 
-func TestRegexpHandler(t *testing.T) {
+func testHandler(w http.ResponseWriter, r *http.Request) {
+	response := testResponse{Method: r.Method, Path: r.URL.Path}
+
+	matches, ok := RegexpMatchesFromContext(r.Context())
+	if ok {
+		response.Matches = matches
+	}
+
+	output, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(output)
+}
+
+func TestInvalidRegexpMux(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		err := recover()
+		t.Logf("recovered panic %v", err)
+	}()
+
+	pattern := `/posts/([0-9]+$`
+	rh := NewRegexpMux()
+	rh.HandleFunc(pattern, testHandler)
+	t.Fatalf("Panic expected for %s", pattern)
+}
+
+func TestDuplicateRegexpHandler(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		err := recover()
+		t.Logf("recovered panic %v", err)
+	}()
+
+	pattern := `/posts[/]?$`
+	rh := NewRegexpMux()
+	rh.HandleFunc(pattern, testHandler)
+	rh.HandleFunc(pattern, testHandler)
+	t.Fatalf("Panic expected for %s", pattern)
+}
+
+func TestRegexpMux(t *testing.T) {
 	testcases := []struct {
 		Path    string
 		Method  string
@@ -62,31 +105,22 @@ func TestRegexpHandler(t *testing.T) {
 			Matches: []string{"/posts/1", "1"},
 		},
 		{
-			Path:   "/posts/23/comments",
+			Path:    "/posts/23/comments",
+			Method:  http.MethodGet,
+			Status:  http.StatusOK,
+			Matches: []string{"/posts/23/comments", "23"},
+		},
+		{
+			Path:   "/posts/23/foo",
 			Method: http.MethodGet,
 			Status: http.StatusNotFound,
 		},
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		response := testResponse{Method: r.Method, Path: r.URL.Path}
-
-		matches, ok := RegexpMatchesFromContext(r.Context())
-		if ok {
-			response.Matches = matches
-		}
-
-		output, err := json.Marshal(response)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(output)
-	}
-
 	rh := NewRegexpMux()
-	rh.HandleFunc(`/posts[/]?$`, handler)
-	rh.HandleFunc(`/posts/([0-9]+)$`, handler)
+	rh.HandleFunc(`/posts[/]?$`, testHandler)
+	rh.HandleFunc(`/posts/([0-9]+)$`, testHandler)
+	rh.HandleFunc(`/posts/([0-9]+)/comments$`, testHandler)
 
 	for _, tc := range testcases {
 		tc := tc // capture range var
