@@ -23,10 +23,37 @@ func RouteParamsFromContext(ctx context.Context) (RouteParams, bool) {
 	return params, ok
 }
 
+type RouteParams map[string]string
+
 // A route is a RegExp pattern and the handler to call.
 type route struct {
-	h       http.Handler
-	pattern *regexp.Regexp
+	re *regexp.Regexp
+	h  http.Handler
+}
+
+func newRoute(p string, h http.Handler) *route {
+	// TODO: Fix up pattern...
+	return &route{h: h, re: regexp.MustCompile(p)}
+}
+
+func (r *route) GetParams(path string) RouteParams {
+	keys := r.re.SubexpNames()
+	values := r.re.FindStringSubmatch(path)
+
+	params := RouteParams{}
+	for i, k := range keys {
+		if k == "" {
+			k = strconv.Itoa(i)
+		}
+		params[k] = values[i]
+	}
+
+	return params
+}
+
+// Match checks if p matches route
+func (r *route) Match(p string) bool {
+	return r.re.MatchString(p)
 }
 
 // A RouterMux is an HTTP request multiplexer for URL patterns.
@@ -52,7 +79,7 @@ type route struct {
 // RouterMux follows the general approach used by http.ServeMux.
 type RouterMux struct {
 	mu     sync.RWMutex
-	routes map[string]route
+	routes map[string]*route
 	hosts  bool
 }
 
@@ -65,7 +92,7 @@ func NewRouterMux() *RouterMux {
 func (mux *RouterMux) match(method, path string) (h http.Handler, pattern string) {
 	var n = 0
 	for k, v := range mux.routes {
-		if !v.pattern.MatchString(path) {
+		if !v.Match(path) {
 			continue
 		}
 
@@ -108,23 +135,6 @@ func (mux *RouterMux) Handler(r *http.Request) (h http.Handler, pattern string) 
 	return
 }
 
-type RouteParams map[string]string
-
-func (r *route) GetParams(path string) RouteParams {
-	keys := r.pattern.SubexpNames()
-	values := r.pattern.FindStringSubmatch(path)
-
-	params := RouteParams{}
-	for i, k := range keys {
-		if k == "" {
-			k = strconv.Itoa(i)
-		}
-		params[k] = values[i]
-	}
-
-	return params
-}
-
 // ServeHTTP dispatches request to the handler whose pattern most closely matches the request URL.
 func (mux *RouterMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h, pattern := mux.Handler(r)
@@ -149,10 +159,6 @@ func (mux *RouterMux) Handle(pattern string, handler http.Handler) {
 		panic("mux: invalid pattern " + pattern)
 	}
 
-	// TODO: prepare expression
-
-	re := regexp.MustCompile(pattern)
-
 	if handler == nil {
 		panic("mux: nil handler")
 	}
@@ -162,10 +168,10 @@ func (mux *RouterMux) Handle(pattern string, handler http.Handler) {
 	}
 
 	if mux.routes == nil {
-		mux.routes = make(map[string]route)
+		mux.routes = make(map[string]*route)
 	}
 
-	mux.routes[pattern] = route{h: handler, pattern: re}
+	mux.routes[pattern] = newRoute(pattern, handler)
 
 	if pattern[0] != '/' {
 		mux.hosts = true
