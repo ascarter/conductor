@@ -5,6 +5,7 @@ import (
 	"html"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/ascarter/conductor"
 )
@@ -29,14 +30,14 @@ func goodbyeHandler(w http.ResponseWriter, r *http.Request) {
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Running list handler")
-	matches, ok := conductor.RegexpMatchesFromContext(r.Context())
+	params, ok := conductor.RouteParamsFromContext(r.Context())
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("matches: %+v", matches)
-	count, err := strconv.Atoi(matches[1])
+	log.Printf("route params: %+v", params)
+	count, err := strconv.Atoi(params["1"])
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -47,6 +48,25 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func postsHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Running posts handler")
+	params, ok := conductor.RouteParamsFromContext(r.Context())
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("route params: %+v", params)
+
+	id, ok := params["id"]
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	fmt.Fprintf(w, "post %s", id)
+}
+
 func main() {
 	mux := conductor.NewRouter()
 
@@ -55,9 +75,15 @@ func main() {
 	mux.Use(conductor.DefaultRequestLogComponent)
 	mux.Use(conductor.ComponentFunc(mw))
 
-	// Add handlers
+	// Add simple routes
 	mux.HandleFunc("/hello", helloHandler)
 	mux.HandleFunc("/goodbye", goodbyeHandler)
+
+	// Add regexp routes
+	mux.HandleFunc(`/list/([0-9]+)$`, listHandler)
+
+	// Add parameterized routes
+	mux.HandleFunc(`/posts/:id`, postsHandler)
 
 	// Start server
 	addr := ":8080"
