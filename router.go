@@ -23,6 +23,8 @@ func RouteParamsFromContext(ctx context.Context) (RouteParams, bool) {
 	return params, ok
 }
 
+// RouteParams is a map of param names to values that are matched with a pattern to a path.
+// Param ID's are expected to be unique.
 type RouteParams map[string]string
 
 // A route is a RegExp pattern and the handler to call.
@@ -32,8 +34,22 @@ type route struct {
 }
 
 func newRoute(p string, h http.Handler) *route {
-	// TODO: Fix up pattern...
-	return &route{h: h, re: regexp.MustCompile(p)}
+	n := len(p)
+	pattern := p
+
+	// TODO: Replace parameters
+
+	if p[n-1] != '/' {
+		if p[n-1] != '$' {
+			// Terminate for exact match
+			pattern += "$"
+		}
+	} else {
+		// Subtree - match anything below
+		pattern += ".*"
+	}
+
+	return &route{h: h, re: regexp.MustCompile(pattern)}
 }
 
 func (r *route) GetParams(path string) RouteParams {
