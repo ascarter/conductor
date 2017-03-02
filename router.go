@@ -2,9 +2,11 @@ package conductor
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -33,20 +35,41 @@ type route struct {
 	h  http.Handler
 }
 
+// expandParams replaces parameterized placeholders like `:id` with named
+// regular expression match group like `(?P<id>\w+)`
+func expandParams(s string) string {
+	// If pattern does not start with `/`, treat as pure regular expression
+	if s[0] != '/' {
+		return s
+	}
+
+	var n int
+	parts := strings.Split(s, "/")
+	for i, v := range parts {
+		if strings.HasPrefix(v, ":") {
+			// Replace it with named match group
+			parts[i] = fmt.Sprintf(`(?P<%s>\w+)`, v[1:])
+			n++
+		}
+	}
+
+	// Any parameters?
+	if n > 0 {
+		return strings.Join(parts, "/")
+	}
+
+	return s
+}
+
 func newRoute(p string, h http.Handler) *route {
 	n := len(p)
-	pattern := p
+	pattern := expandParams(p)
 
-	// TODO: Replace parameters
-
-	if p[n-1] != '/' {
+	if p[0] == '/' && p[n-1] != '/' {
 		if p[n-1] != '$' {
 			// Terminate for exact match
 			pattern += "$"
 		}
-	} else {
-		// Subtree - match anything below
-		pattern += ".*"
 	}
 
 	return &route{h: h, re: regexp.MustCompile(pattern)}
@@ -58,8 +81,12 @@ func (r *route) GetParams(path string) RouteParams {
 
 	params := RouteParams{}
 	for i, k := range keys {
+		// Skip entire match string
+		if i == 0 {
+			continue
+		}
 		if k == "" {
-			k = strconv.Itoa(i)
+			k = "$" + strconv.Itoa(i)
 		}
 		params[k] = values[i]
 	}

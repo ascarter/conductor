@@ -151,6 +151,18 @@ func TestRouter(t *testing.T) {
 			Expected: "fn2: testrequest",
 		},
 		{
+			Path:     "/fn1/foo/..",
+			Method:   http.MethodGet,
+			Status:   http.StatusOK,
+			Expected: "fn1: testrequest",
+		},
+		{
+			Path:     "/./fn1/.",
+			Method:   http.MethodGet,
+			Status:   http.StatusOK,
+			Expected: "fn1: testrequest",
+		},
+		{
 			Path:   "/foo",
 			Method: http.MethodGet,
 			Status: http.StatusNotFound,
@@ -177,7 +189,7 @@ func TestRouter(t *testing.T) {
 
 			bodyText := string(body)
 			if bodyText != tc.Expected {
-				t.Errorf("%s: %v != %v", tc, bodyText, expected)
+				t.Errorf("%s: %q != %q", tc, bodyText, expected)
 			}
 		}
 	}
@@ -220,6 +232,35 @@ func TestUse(t *testing.T) {
 	expectedMessage := fmt.Sprintf("modified-%s", expected)
 	if string(body) != expectedMessage {
 		t.Errorf("%v != %v", string(body), expectedMessage)
+	}
+}
+
+func TestRoutePatterns(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		Pattern  string
+		Expected string
+	}{
+		{"/", `/`},
+		{"/foo", `/foo$`},
+		{"/foo/", `/foo/`},
+		{"/foo/bar", `/foo/bar$`},
+		{"/foo/:bar", `/foo/(?P<bar>\w+)$`},
+		{"/foo/:bar/baz", `/foo/(?P<bar>\w+)/baz$`},
+		{"/:foo/:bar/:baz", `/(?P<foo>\w+)/(?P<bar>\w+)/(?P<baz>\w+)$`},
+		{"/foo/:id/bar/:id", `/foo/(?P<id>\w+)/bar/(?P<id>\w+)$`},
+		{"foo", `foo`},
+		{":id", ":id"},
+	}
+
+	router := NewRouter()
+
+	for _, tc := range testcases {
+		r := newRoute(tc.Pattern, router)
+		if r.re.String() != tc.Expected {
+			t.Errorf("Pattern %q compiled to %q, expected %q", tc.Pattern, r.re.String(), tc.Expected)
+		}
 	}
 }
 
@@ -292,56 +333,44 @@ func TestRegexpRoutes(t *testing.T) {
 			Path:    "/posts",
 			Method:  http.MethodGet,
 			Status:  http.StatusOK,
-			Matches: map[string]string{"0": "/posts"},
+			Matches: map[string]string{},
 		},
 		{
-			Path:   "/posts/1",
-			Method: http.MethodGet,
-			Status: http.StatusOK,
-			Matches: map[string]string{
-				"0": "/posts/1",
-				"1": "1",
-			},
+			Path:    "/posts/1",
+			Method:  http.MethodGet,
+			Status:  http.StatusOK,
+			Matches: map[string]string{"$1": "1"},
 		},
 		{
 			Path:    "/posts",
 			Method:  http.MethodPost,
 			Status:  http.StatusOK,
-			Matches: map[string]string{"0": "/posts"},
+			Matches: map[string]string{},
 			Body: url.Values{
 				"title": {"sample post"},
 				"body":  {"post body"},
 			},
 		},
 		{
-			Path:   "/posts/1",
-			Method: http.MethodPut,
-			Status: http.StatusOK,
-			Matches: map[string]string{
-				"0": "/posts/1",
-				"1": "1",
-			},
+			Path:    "/posts/1",
+			Method:  http.MethodPut,
+			Status:  http.StatusOK,
+			Matches: map[string]string{"$1": "1"},
 			Body: url.Values{
 				"body": {"updated post body"},
 			},
 		},
 		{
-			Path:   "/posts/1",
-			Method: http.MethodDelete,
-			Status: http.StatusOK,
-			Matches: map[string]string{
-				"0": "/posts/1",
-				"1": "1",
-			},
+			Path:    "/posts/1",
+			Method:  http.MethodDelete,
+			Status:  http.StatusOK,
+			Matches: map[string]string{"$1": "1"},
 		},
 		{
-			Path:   "/posts/23/comments",
-			Method: http.MethodGet,
-			Status: http.StatusOK,
-			Matches: map[string]string{
-				"0": "/posts/23/comments",
-				"1": "23",
-			},
+			Path:    "/posts/23/comments",
+			Method:  http.MethodGet,
+			Status:  http.StatusOK,
+			Matches: map[string]string{"$1": "23"},
 		},
 		{
 			Path:   "/posts/23/foo",
