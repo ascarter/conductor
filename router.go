@@ -108,22 +108,29 @@ func (r *route) Match(p string) bool {
 // match both "/images\/.*" and "/images/thumbnails\/.*", the path "/images/thumbnails"
 // would use the later handler.
 //
-// Patterns may optionally begin with a host name, restricting matches to URLs on that
-// host only. Host specific patterns take precedence over general patterns.
-//
 // Patterns can take the following forms:
+//
+//	Static
+//	------
 //	`/posts`
 //	`/posts/`
+//
+//	Parameterized
+//	-------------
 //	`/posts/:id`
+//	`/posts/:id/comments/:author`
+//
+//	Regular Expression
+//	------------------
 //	`/posts/(\d+)`
 //	`/posts/(?<id>\d+)`
-//	`host/posts`
+//	`.*/author`
 //
-// RouterMux follows the general approach used by http.ServeMux.
+// RouterMux follows the general approach used by http.ServeMux. If host patterns are
+// desired, a RouterMux can be assigned to routes on http.ServeMux using `host/`
 type RouterMux struct {
 	mu     sync.RWMutex
 	routes map[string]*route
-	hosts  bool
 }
 
 // NewRouterMux allocates and returns a new RouterMux.
@@ -149,8 +156,8 @@ func (mux *RouterMux) match(method, path string) (h http.Handler, pattern string
 	return
 }
 
-// Handler returns the handler to use for the given request, consulting r.Host, r.Method,
-// and r.URL.Path. It always returns a non-nil handler.
+// Handler returns the handler to use for the given request.
+// It always returns a non-nil handler.
 //
 // Handler also returns the registered pattern that matches the request.
 //
@@ -160,18 +167,10 @@ func (mux *RouterMux) Handler(r *http.Request) (h http.Handler, pattern string) 
 	mux.mu.RLock()
 	defer mux.mu.RUnlock()
 
-	// Host-specific pattern takes precedence over generic ones
-	if mux.hosts {
-		h, pattern = mux.match(r.Method, r.Host+r.URL.Path)
-	}
+	h, pattern = mux.match(r.Method, r.URL.Path)
 
-	// If no host match, match generic patterns
 	if h == nil {
-		h, pattern = mux.match(r.Method, r.URL.Path)
-	}
-
-	// No handler matches
-	if h == nil {
+		// No handler matched
 		h, pattern = http.NotFoundHandler(), ""
 	}
 
@@ -215,10 +214,6 @@ func (mux *RouterMux) Handle(pattern string, handler http.Handler) {
 	}
 
 	mux.routes[pattern] = newRoute(pattern, handler)
-
-	if pattern[0] != '/' {
-		mux.hosts = true
-	}
 }
 
 // HandleFunc registers the handler function for the given pattern.
