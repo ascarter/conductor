@@ -1,4 +1,4 @@
-package main
+package conductor_test
 
 import (
 	"fmt"
@@ -67,7 +67,7 @@ func postsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "post %s", id)
 }
 
-func main() {
+func Example() {
 	mux := conductor.NewRouter()
 
 	// Define middleware in order
