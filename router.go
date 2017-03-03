@@ -256,7 +256,7 @@ func (h *RouteHandler) HandleRoute(method, pattern string, handler http.Handler)
 	return nil
 }
 
-// AddRouteFunc defines route for HTTP method and pattern to http.HandlerFunc.
+// HandleRouteFunc defines route for HTTP method and pattern to http.HandlerFunc.
 func (h *RouteHandler) HandleRouteFunc(method, pattern string, fn http.HandlerFunc) error {
 	return h.HandleRoute(method, pattern, http.HandlerFunc(fn))
 }
