@@ -68,10 +68,10 @@ Pattern | Description
 ------- | -----------
 `/posts` | Exact match for `/posts`
 `/posts/` | Match anything that begins with `/posts/`
-`/posts/:id` | Match `/posts/123` with `id==23` 
-`/posts/:id/comments/:author` | Match `/posts/1/comments/obama` with `id==1` and `author==joe`
-`/posts/(\d+)` | Match using regular expression with `$1` set to number
-`/posts/(?<id>\d+)` | Match using regular expression with `id` set to number
+`/posts/:id` | Match `/posts/123` with params `{ "id": "23" }` 
+`/posts/:id/comments/:author` | Match `/posts/1/comments/obama` with params `{ "id": "1", "author": "obama" }`
+`/posts/(\d+)` | Match using regular expression with params `{ "$1": "<match1>" }`
+`/posts/(?<id>\d+)` | Match using regular expression with params `{ "id": "<match_id>" }`
 `.*/author` | Match using regular expression
 
 # Middleware
