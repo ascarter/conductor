@@ -27,7 +27,7 @@ func RequestIDFromContext(ctx context.Context) (string, bool) {
 }
 
 // RequestIDHandler sets unique request id.
-// If header `X-Request-ID` is already present in the request, that is considered the 
+// If header `X-Request-ID` is already present in the request, that is considered the
 // request id.
 func RequestIDHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

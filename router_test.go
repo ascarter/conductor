@@ -176,7 +176,7 @@ func TestRouter(t *testing.T) {
 		}
 
 		if res.StatusCode != tc.Status {
-			t.Errorf("%s: handler status code %v, expected %v", tc, res.StatusCode, tc.Status)
+			t.Errorf("%s: handler status code %v, expected %v", tc.String(), res.StatusCode, tc.Status)
 		}
 
 		if res.StatusCode == http.StatusOK {
@@ -189,7 +189,7 @@ func TestRouter(t *testing.T) {
 
 			bodyText := string(body)
 			if bodyText != tc.Expected {
-				t.Errorf("%s: %q != %q", tc, bodyText, expected)
+				t.Errorf("%s: %q != %q", tc.String(), bodyText, expected)
 			}
 		}
 	}
