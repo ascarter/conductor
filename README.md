@@ -54,9 +54,7 @@ func main() {
 	router.HandleFunc("/goodbye", goodbyeHandler)
 
 	// Start server
-	addr := ":8080"
-	log.Printf("Starting server on %s...", addr)
-	log.Fatal(http.ListenAndServe(addr, router))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
 
