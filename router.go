@@ -2,6 +2,7 @@ package conductor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -220,6 +221,55 @@ func (mux *RouterMux) Handle(pattern string, handler http.Handler) {
 // HandleFunc registers a handler function for a pattern.
 func (mux *RouterMux) HandleFunc(pattern string, handler http.HandlerFunc) {
 	mux.Handle(pattern, http.HandlerFunc(handler))
+}
+
+// A RouteHandler uses a RouteMap to dispatch requests based on method and path.
+// It is useful for mapping a heterogenous mix of methods and path patterns.
+type RouteHandler struct {
+	routes map[string]*RouterMux
+}
+
+// NewRouteHandler returns a new RouteHandler instance
+func NewRouteHandler() *RouteHandler {
+	return &RouteHandler{}
+}
+
+// HandleRoute defines route for HTTP method and pattern to http.Handler.
+func (h *RouteHandler) HandleRoute(method, pattern string, handler http.Handler) error {
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace:
+		if h.routes == nil {
+			h.routes = make(map[string]*RouterMux)
+		}
+
+		mux, ok := h.routes[method]
+		if !ok {
+			mux = NewRouterMux()
+			h.routes[method] = mux
+		}
+
+		mux.Handle(pattern, handler)
+	default:
+		return errors.New("invalid HTTP method")
+	}
+
+	return nil
+}
+
+// AddRouteFunc defines route for HTTP method and pattern to http.HandlerFunc.
+func (h *RouteHandler) HandleRouteFunc(method, pattern string, fn http.HandlerFunc) error {
+	return h.HandleRoute(method, pattern, http.HandlerFunc(fn))
+}
+
+// ServeHTTP dispatches request to the RouteMux handler that matches the request method.
+func (h *RouteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	mux, ok := h.routes[r.Method]
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	mux.ServeHTTP(w, r)
 }
 
 // A Router is an http.Handler that can route requests with a stack of middleware components.
