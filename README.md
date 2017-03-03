@@ -76,7 +76,7 @@ Pattern | Description
 
 # Middleware
 
-Conductor defines a interface for building middleware components. A `Component` is anything that implements `Next(http.Handler) http.Handler`. This provides a pattern for wrapping handlers.
+Conductor defines an interface for building middleware components. A `Component` is anything that implements `Next(http.Handler) http.Handler`. This provides a pattern for wrapping handlers.
 
 An example middleware:
 
