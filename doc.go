@@ -1,14 +1,17 @@
 /*
-Package conductor provides a library of web application utilities.
+Package conductor is an HTTP handling library.
+It provides `net/http` compatible extensions for routing and middleware.
 
 Create a new Router instance and define middleware components:
 
 	mux := conductor.NewRouter()
-	mux.Use(conductor.RequestIDComponent)
+	mux.Use(conductor.RequestIDComponent())
 	mux.Use(conductor.DefaultRequestLogComponent)
 	mux.Use(conductor.ComponentFunc(myMiddlwareHandler))
 
-A Router instance is ServeMux compatible Handler. Register routes to Router:
+A Router instance is an http.ServeMux compatible http.Handler.
+
+Register routes to Router:
 
 	// Static resources
 	files := http.FileServer(http.Dir("./assets"))

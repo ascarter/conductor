@@ -61,7 +61,7 @@ func TestRequestApp(t *testing.T) {
 	}
 
 	app := NewRouter()
-	app.Use(RequestIDComponent)
+	app.Use(RequestIDComponent())
 	app.HandleFunc("/", fn)
 
 	server := httptest.NewServer(app)
