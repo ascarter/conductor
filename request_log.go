@@ -41,12 +41,13 @@ func (r *responseLogger) Size() int {
 	return r.size
 }
 
-// A LoggerOutput handles logging output
+// A LoggerOutput provides an output target for a log.
 type LoggerOutput interface {
 	Printf(string, ...interface{})
 }
 
-// RequestLogHandler logs request with start/complete log lines including timing
+// RequestLogHandler logs request start and end. The start log line includes information
+// on the request. The end log line includes result of request and time elapsed.
 func RequestLogHandler(h http.Handler, logger LoggerOutput) http.Handler {
 	if logger == nil {
 		// Emulate standard logger
@@ -80,11 +81,10 @@ func RequestLogComponent(logger LoggerOutput) Component {
 	})
 }
 
-var (
-	// DefaultRequestLogComponent is RequestLogComponent that logs to stderr
-	DefaultRequestLogComponent = RequestLogComponent(nil)
-	// DefaultRequestLogHandler is a http.Handler that logs to stderr
-	DefaultRequestLogHandler = func(h http.Handler) http.Handler {
-		return RequestLogHandler(h, nil)
-	}
-)
+// DefaultRequestLogComponent is RequestLogComponent that logs to stderr
+var DefaultRequestLogComponent = RequestLogComponent(nil)
+
+// DefaultRequestLogHandler is an http.Handler that logs to stderr
+var DefaultRequestLogHandler = func(h http.Handler) http.Handler {
+	return RequestLogHandler(h, nil)
+}

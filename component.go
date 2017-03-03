@@ -8,7 +8,7 @@ type Component interface {
 }
 
 // A ComponentFunc is an adapter that allows the use of ordinary function as
-// a App component
+// a middleware component
 type ComponentFunc func(http.Handler) http.Handler
 
 // Next calls CompenentFunc passing in handler h

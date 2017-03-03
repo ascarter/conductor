@@ -20,13 +20,15 @@ func newContextWithRequestID(ctx context.Context, r *http.Request) context.Conte
 	return context.WithValue(ctx, requestIDKey, rid)
 }
 
-// RequestIDFromContext returns the request id from context if any
+// RequestIDFromContext returns the request id from request context
 func RequestIDFromContext(ctx context.Context) (string, bool) {
 	rid, ok := ctx.Value(requestIDKey).(string)
 	return rid, ok
 }
 
-// RequestIDHandler sets unique request id if not present
+// RequestIDHandler sets unique request id.
+// If header `X-Request-ID` is already present in the request, that is considered the 
+// request id.
 func RequestIDHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := newContextWithRequestID(r.Context(), r)
@@ -35,4 +37,4 @@ func RequestIDHandler(h http.Handler) http.Handler {
 }
 
 // RequestIDComponent returns a RequestIDHandler as a component
-var RequestIDComponent = ComponentFunc(RequestIDHandler)
+func RequestIDComponent() Component { return ComponentFunc(RequestIDHandler) }

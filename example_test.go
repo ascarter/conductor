@@ -36,8 +36,8 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("route params: %+v", params)
-	count, err := strconv.Atoi(params["1"])
+	// Get count from first regular expression match
+	count, err := strconv.Atoi(params["$1"])
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -56,8 +56,7 @@ func postsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("route params: %+v", params)
-
+	// Get post id
 	id, ok := params["id"]
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -71,7 +70,7 @@ func Example() {
 	mux := conductor.NewRouter()
 
 	// Define middleware in order
-	mux.Use(conductor.RequestIDComponent)
+	mux.Use(conductor.RequestIDComponent())
 	mux.Use(conductor.DefaultRequestLogComponent)
 	mux.Use(conductor.ComponentFunc(mw))
 
@@ -86,7 +85,5 @@ func Example() {
 	mux.HandleFunc(`/posts/:id`, postsHandler)
 
 	// Start server
-	addr := ":8080"
-	log.Printf("Starting server on %s...", addr)
-	log.Fatal(http.ListenAndServe(addr, mux))
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }

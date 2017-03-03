@@ -1,7 +1,6 @@
 # conductor [![GoDoc](https://godoc.org/github.com/ascarter/conductor?status.svg)](http://godoc.org/github.com/ascarter/conductor)
 
-Conductor is an HTTP routing and handling library for Go. It provides standard library
-compatible extensions for routing and middleware.
+Conductor is an HTTP handling library for Go. It provides `net/http` compatible extensions for routing and middleware.
 
 Conductor draws some inspiration from how [Ruby on Rails](http://rubyonrails.org) applications are structured.
 
@@ -46,7 +45,7 @@ func main() {
 	router := conductor.NewRouter()
 
 	// Define middleware in order
-	router.Use(conductor.RequestIDComponent)
+	router.Use(conductor.RequestIDComponent())
 	router.Use(conductor.DefaultRequestLogComponent)
 	router.Use(conductor.ComponentFunc(mw))
 
@@ -100,7 +99,7 @@ Middleware is added in order to a `Router` by the `Use` func:
 ```go
 	// Define middleware in order
 	router := conductor.NewRouter()
-	router.Use(conductor.RequestIDComponent)
+	router.Use(conductor.RequestIDComponent())
 	router.Use(conductor.DefaultRequestLogComponent)
 	router.Use(conductor.ComponentFunc(mw))
 ```

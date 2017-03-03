@@ -20,6 +20,7 @@ func newContextWithRouteParams(ctx context.Context, params RouteParams) context.
 }
 
 // RouteParamsFromContext returns a map of params and values extracted from the route match.
+// Unnamed parameters are returned using position (for example `$1`).
 func RouteParamsFromContext(ctx context.Context) (RouteParams, bool) {
 	params, ok := ctx.Value(routeParamsKey).(RouteParams)
 	return params, ok
@@ -188,7 +189,7 @@ func (mux *RouterMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.ServeHTTP(w, r)
 }
 
-// Handle registers the handler for a give pattern.
+// Handle registers a handler for a pattern.
 //
 // If the handler already exists for pattern or the expression does not compile,
 // Handle panics.
@@ -216,7 +217,7 @@ func (mux *RouterMux) Handle(pattern string, handler http.Handler) {
 	mux.routes[pattern] = newRoute(pattern, handler)
 }
 
-// HandleFunc registers the handler function for the given pattern.
+// HandleFunc registers a handler function for a pattern.
 func (mux *RouterMux) HandleFunc(pattern string, handler http.HandlerFunc) {
 	mux.Handle(pattern, http.HandlerFunc(handler))
 }
@@ -244,7 +245,7 @@ func (router *Router) Use(component ...Component) {
 	router.components = append(router.components, component...)
 }
 
-// Handle registers the handler for the given pattern.
+// Handle registers a handler for a pattern.
 func (router *Router) Handle(pattern string, handler http.Handler) {
 	for i := range router.components {
 		handler = router.components[len(router.components)-1-i].Next(handler)
@@ -253,12 +254,12 @@ func (router *Router) Handle(pattern string, handler http.Handler) {
 	router.rmux.Handle(pattern, handler)
 }
 
-// HandleFunc registers the handler function for the given pattern.
+// HandleFunc registers a handler function for a pattern.
 func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) {
 	router.Handle(pattern, http.HandlerFunc(handler))
 }
 
-// ServeHTTP dispatches the request to the internal ServeMux for URL normalization then
+// ServeHTTP dispatches the request to the internal http.ServeMux for URL normalization then
 // is passed to the internal RouterMux for dispatch.
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router.mux.ServeHTTP(w, r)
