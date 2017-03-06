@@ -23,7 +23,7 @@ func ReadJSON(r *http.Request, data interface{}) error {
 // WriteJSON writes data as JSON to the output writer.
 // Data expected to be able to be marshaled to JSON.
 func WriteJSON(w http.ResponseWriter, data interface{}) error {
-	output, err := json.MarshalIndent(data, "", "\t")
+	output, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return err
 	}
