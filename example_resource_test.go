@@ -145,7 +145,7 @@ func Example_ResourceHandler() {
 	mux.Use(conductor.DefaultRequestLogComponent)
 
 	// Add resource
-	h := conductor.NewResourceHandler(`/posts`, &EmployeeResource{})
+	h := conductor.NewResourceHandler(`/posts`, NewEmployeeResource())
 	mux.Handle("/posts", h)
 
 	// Start server
