@@ -2,14 +2,14 @@ package conductor
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 )
 
 // ReadJSON reads data from request body to the interface provided.
 func ReadJSON(r *http.Request, data interface{}) error {
-	body := make([]byte, r.ContentLength)
-
-	if _, err := r.Body.Read(body); err != nil {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
 		return err
 	}
 
