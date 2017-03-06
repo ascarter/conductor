@@ -20,10 +20,6 @@ type EmployeeResource struct {
 	Employees map[string]Employee `json:"employees"`
 }
 
-func NewEmployeeResource() *EmployeeResource {
-	return &EmployeeResource{lastID: 0}
-}
-
 // GET /employees
 func (er *EmployeeResource) Index(w http.ResponseWriter, r *http.Request) {
 	// return list of employees
@@ -145,8 +141,7 @@ func Example_ResourceHandler() {
 	mux.Use(conductor.DefaultRequestLogComponent)
 
 	// Add resource
-	h := conductor.NewResourceHandler(`/posts`, NewEmployeeResource())
-	mux.HandleResource(h)
+	mux.HandleResource(`/posts`, &EmployeeResource{lastID: 0})
 
 	// Start server
 	log.Fatal(http.ListenAndServe(":8080", mux))

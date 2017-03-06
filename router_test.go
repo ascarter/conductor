@@ -283,8 +283,7 @@ func TestResourceRouter(t *testing.T) {
 	}
 
 	router := NewRouter()
-	resource := NewResourceHandler(`/posts/`, &testResource{})
-	router.HandleResource(resource)
+	router.HandleResource(`/posts/`, &testResource{})
 
 	for _, tc := range testcases {
 		t.Run(tc.String(), func(t *testing.T) {
@@ -668,7 +667,7 @@ func TestResourceHandler(t *testing.T) {
 		},
 	}
 
-	h := NewResourceHandler(`/posts`, &testResource{})
+	h := NewResource(`/posts`, &testResource{})
 
 	for _, tc := range testcases {
 		t.Run(tc.String(), func(t *testing.T) {

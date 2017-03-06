@@ -310,10 +310,13 @@ func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) {
 }
 
 // HandleResource registers a ResourceHandler at the resource's root path.
-func (router *Router) HandleResource(handler *ResourceHandler) {
+func (router *Router) HandleResource(pathname string, resource Resource) {
+	// Allocate a new ResourceHandler
+	h := NewResource(pathname, resource)
+
 	// Map both resource and the subtree
-	router.Handle(handler.Path(), handler)
-	router.Handle(handler.Path()+"/", handler)
+	router.Handle(h.Path(), h)
+	router.Handle(h.Path()+"/", h)
 }
 
 // ServeHTTP dispatches the request to the internal http.ServeMux for URL normalization then

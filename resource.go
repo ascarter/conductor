@@ -35,8 +35,8 @@ type ResourceHandler struct {
 	mux *RouteHandler
 }
 
-// NewResourceHandler returns a new ResourceHandler instance.
-func NewResourceHandler(pathname string, resource Resource) *ResourceHandler {
+// NewResource returns a new ResourceHandler instance.
+func NewResource(pathname string, resource Resource) *ResourceHandler {
 	n := len(pathname)
 	if pathname[n-1] == '/' {
 		// Drop trailing `/`
