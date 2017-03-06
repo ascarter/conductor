@@ -309,6 +309,13 @@ func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) {
 	router.Handle(pattern, http.HandlerFunc(handler))
 }
 
+// HandleResource registers a ResourceHandler at the resource's root path.
+func (router *Router) HandleResource(handler *ResourceHandler) {
+	// Map both resource and the subtree
+	router.Handle(handler.Path(), handler)
+	router.Handle(handler.Path()+"/", handler)
+}
+
 // ServeHTTP dispatches the request to the internal http.ServeMux for URL normalization then
 // is passed to the internal RouterMux for dispatch.
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {

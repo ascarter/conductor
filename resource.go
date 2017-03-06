@@ -37,6 +37,12 @@ type ResourceHandler struct {
 
 // NewResourceHandler returns a new ResourceHandler instance.
 func NewResourceHandler(pathname string, resource Resource) *ResourceHandler {
+	n := len(pathname)
+	if pathname[n-1] == '/' {
+		// Drop trailing `/`
+		pathname = pathname[:n-1]
+	}
+
 	collectionPath := pathname
 	itemPath := path.Join(collectionPath, ":id")
 
@@ -46,6 +52,7 @@ func NewResourceHandler(pathname string, resource Resource) *ResourceHandler {
 	h.HandleRouteFunc(http.MethodGet, itemPath, resource.Show)
 	h.HandleRouteFunc(http.MethodPut, itemPath, resource.Update)
 	h.HandleRouteFunc(http.MethodDelete, itemPath, resource.Destroy)
+
 	return &ResourceHandler{r: resource, p: pathname, mux: h}
 }
 
@@ -53,4 +60,9 @@ func NewResourceHandler(pathname string, resource Resource) *ResourceHandler {
 // map to a Resource.
 func (h *ResourceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mux.ServeHTTP(w, r)
+}
+
+// Path returns the resource root path.
+func (h *ResourceHandler) Path() string {
+	return h.p
 }

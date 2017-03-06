@@ -146,7 +146,7 @@ func Example_ResourceHandler() {
 
 	// Add resource
 	h := conductor.NewResourceHandler(`/posts`, NewEmployeeResource())
-	mux.Handle("/posts", h)
+	mux.HandleResource(h)
 
 	// Start server
 	log.Fatal(http.ListenAndServe(":8080", mux))

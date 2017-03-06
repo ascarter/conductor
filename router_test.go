@@ -51,6 +51,10 @@ func (tc *testCase) Run(t *testing.T, h http.Handler) {
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 
+	tc.Verify(t, w)
+}
+
+func (tc *testCase) Verify(t *testing.T, w *httptest.ResponseRecorder) {
 	if w.Code != tc.Status {
 		t.Errorf("handler status code %v, expected %v", w.Code, tc.Status)
 	}
@@ -219,6 +223,74 @@ func TestRouter(t *testing.T) {
 				t.Errorf("%s: %q != %q", tc.String(), bodyText, expected)
 			}
 		}
+	}
+}
+
+func TestResourceRouter(t *testing.T) {
+	testcases := []testCase{
+		{
+			Path:    "/posts",
+			Method:  http.MethodGet,
+			Status:  http.StatusOK,
+			Matches: map[string]string{},
+		},
+		{
+			Path:    "/posts/1",
+			Method:  http.MethodGet,
+			Status:  http.StatusOK,
+			Matches: map[string]string{"id": "1"},
+		},
+		{
+			Path:    "/posts",
+			Method:  http.MethodPost,
+			Status:  http.StatusOK,
+			Matches: map[string]string{},
+			Body: url.Values{
+				"title": {"sample post"},
+				"body":  {"post body"},
+			},
+		},
+		{
+			Path:    "/posts/1",
+			Method:  http.MethodPut,
+			Status:  http.StatusOK,
+			Matches: map[string]string{"id": "1"},
+			Body: url.Values{
+				"body": {"updated post body"},
+			},
+		},
+		{
+			Path:    "/posts/1",
+			Method:  http.MethodDelete,
+			Status:  http.StatusOK,
+			Matches: map[string]string{"id": "1"},
+		},
+		{
+			Path:   "/posts/23/comments",
+			Method: http.MethodGet,
+			Status: http.StatusNotFound,
+		},
+		{
+			Path:   "/posts/23/foo",
+			Method: http.MethodGet,
+			Status: http.StatusNotFound,
+		},
+		{
+			Path:   "/foo",
+			Method: http.MethodGet,
+			Status: http.StatusNotFound,
+		},
+	}
+
+	router := NewRouter()
+	resource := NewResourceHandler(`/posts/`, &testResource{})
+	router.HandleResource(resource)
+
+	for _, tc := range testcases {
+		t.Run(tc.String(), func(t *testing.T) {
+			tc := tc
+			tc.Run(t, router)
+		})
 	}
 }
 
