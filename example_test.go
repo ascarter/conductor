@@ -48,7 +48,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func postsHandler(w http.ResponseWriter, r *http.Request) {
+func paramHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Running posts handler")
 	params, ok := conductor.RouteParamsFromContext(r.Context())
 	if !ok {
@@ -82,7 +82,7 @@ func Example() {
 	mux.HandleFunc(`/list/([0-9]+)$`, listHandler)
 
 	// Add parameterized routes
-	mux.HandleFunc(`/posts/:id`, postsHandler)
+	mux.HandleFunc(`/posts/:id`, paramHandler)
 
 	// Start server
 	log.Fatal(http.ListenAndServe(":8080", mux))
