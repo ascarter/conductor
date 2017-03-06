@@ -110,6 +110,33 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(output)
 }
 
+type testResource struct{}
+
+// GET /resource
+func (tr *testResource) Index(w http.ResponseWriter, r *http.Request) {
+	testHandler(w, r)
+}
+
+// POST /resource
+func (tr *testResource) Create(w http.ResponseWriter, r *http.Request) {
+	testHandler(w, r)
+}
+
+// GET /resource/:id
+func (tr *testResource) Show(w http.ResponseWriter, r *http.Request) {
+	testHandler(w, r)
+}
+
+// PUT /resource/:id
+func (tr *testResource) Update(w http.ResponseWriter, r *http.Request) {
+	testHandler(w, r)
+}
+
+// DELETE /resource/:id
+func (tr *testResource) Destroy(w http.ResponseWriter, r *http.Request) {
+	testHandler(w, r)
+}
+
 func TestNewRouter(t *testing.T) {
 	router := NewRouter()
 	router.Use(&fakeMiddleware{1})
@@ -450,7 +477,7 @@ func TestParameterizedRoutes(t *testing.T) {
 	}
 }
 
-func TestRouteMap(t *testing.T) {
+func TestRouteHandler(t *testing.T) {
 	testcases := []testCase{
 		{
 			Path:    "/posts",
@@ -509,6 +536,67 @@ func TestRouteMap(t *testing.T) {
 	h.HandleRouteFunc(http.MethodPut, `/posts/([0-9]+)$`, testHandler)
 	h.HandleRouteFunc(http.MethodDelete, `/posts/([0-9]+)$`, testHandler)
 	h.HandleRouteFunc(http.MethodGet, `/posts/([0-9]+)/comments$`, testHandler)
+
+	for _, tc := range testcases {
+		t.Run(tc.String(), func(t *testing.T) {
+			tc := tc
+			tc.Run(t, h)
+		})
+	}
+}
+
+func TestResourceHandler(t *testing.T) {
+	testcases := []testCase{
+		{
+			Path:    "/posts",
+			Method:  http.MethodGet,
+			Status:  http.StatusOK,
+			Matches: map[string]string{},
+		},
+		{
+			Path:    "/posts/1",
+			Method:  http.MethodGet,
+			Status:  http.StatusOK,
+			Matches: map[string]string{"id": "1"},
+		},
+		{
+			Path:    "/posts",
+			Method:  http.MethodPost,
+			Status:  http.StatusOK,
+			Matches: map[string]string{},
+			Body: url.Values{
+				"title": {"sample post"},
+				"body":  {"post body"},
+			},
+		},
+		{
+			Path:    "/posts/1",
+			Method:  http.MethodPut,
+			Status:  http.StatusOK,
+			Matches: map[string]string{"id": "1"},
+			Body: url.Values{
+				"body": {"updated post body"},
+			},
+		},
+		{
+			Path:    "/posts/1",
+			Method:  http.MethodDelete,
+			Status:  http.StatusOK,
+			Matches: map[string]string{"id": "1"},
+		},
+		{
+			Path:   "/posts/23/comments",
+			Method: http.MethodGet,
+			Status: http.StatusNotFound,
+		},
+		{
+			Path:   "/posts/23/foo",
+			Method: http.MethodGet,
+			Status: http.StatusNotFound,
+		},
+	}
+
+	h := NewResourceHandler(`/posts`, &testResource{})
 
 	for _, tc := range testcases {
 		t.Run(tc.String(), func(t *testing.T) {

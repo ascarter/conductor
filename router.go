@@ -223,7 +223,7 @@ func (mux *RouterMux) HandleFunc(pattern string, handler http.HandlerFunc) {
 	mux.Handle(pattern, http.HandlerFunc(handler))
 }
 
-// A RouteHandler uses a RouteMap to dispatch requests based on method and path.
+// A RouteHandler dispatch requests based on method and path.
 // It is useful for mapping a heterogenous mix of methods and path patterns.
 type RouteHandler struct {
 	routes map[string]*RouterMux
