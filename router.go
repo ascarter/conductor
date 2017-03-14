@@ -11,18 +11,18 @@ import (
 	"sync"
 )
 
-type routeKey string
+type ctxKey int
 
-const routeParamsKey routeKey = "github.com/ascarter/conductor/RouteParamsKey"
+const routeParamsKey ctxKey = ctxKey(0)
 
-// newContextWithRegexpMatch creates context with regular expression matches
-func newContextWithRouteParams(ctx context.Context, params RouteParams) context.Context {
+// NewContext creates context with route matches
+func NewContext(ctx context.Context, params RouteParams) context.Context {
 	return context.WithValue(ctx, routeParamsKey, params)
 }
 
-// RouteParamsFromContext returns a map of params and values extracted from the route match.
+// FromContext returns a map of params and values extracted from the route matches.
 // Unnamed parameters are returned using position (for example `$1`).
-func RouteParamsFromContext(ctx context.Context) (RouteParams, bool) {
+func FromContext(ctx context.Context) (RouteParams, bool) {
 	params, ok := ctx.Value(routeParamsKey).(RouteParams)
 	return params, ok
 }
@@ -184,7 +184,7 @@ func (mux *RouterMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h, pattern := mux.Handler(r)
 	route, ok := mux.routes[pattern]
 	if ok {
-		ctx := newContextWithRouteParams(r.Context(), route.GetParams(r.URL.Path))
+		ctx := NewContext(r.Context(), route.GetParams(r.URL.Path))
 		r = r.WithContext(ctx)
 	}
 	h.ServeHTTP(w, r)

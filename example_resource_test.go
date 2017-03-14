@@ -53,7 +53,7 @@ func (er *EmployeeResource) Create(w http.ResponseWriter, r *http.Request) {
 
 // GET /employees/:id
 func (er *EmployeeResource) Show(w http.ResponseWriter, r *http.Request) {
-	params, ok := conductor.RouteParamsFromContext(r.Context())
+	params, ok := conductor.FromContext(r.Context())
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -81,7 +81,7 @@ func (er *EmployeeResource) Show(w http.ResponseWriter, r *http.Request) {
 
 // PUT /employees/:id
 func (er *EmployeeResource) Update(w http.ResponseWriter, r *http.Request) {
-	params, ok := conductor.RouteParamsFromContext(r.Context())
+	params, ok := conductor.FromContext(r.Context())
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -112,7 +112,7 @@ func (er *EmployeeResource) Update(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /employees/:id
 func (er *EmployeeResource) Destroy(w http.ResponseWriter, r *http.Request) {
-	params, ok := conductor.RouteParamsFromContext(r.Context())
+	params, ok := conductor.FromContext(r.Context())
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -135,14 +135,6 @@ func (er *EmployeeResource) Destroy(w http.ResponseWriter, r *http.Request) {
 
 func Example_ResourceHandler() {
 	mux := conductor.NewRouter()
-
-	// Define middleware in order
-	mux.Use(conductor.RequestIDComponent())
-	mux.Use(conductor.DefaultRequestLogComponent)
-
-	// Add resource
 	mux.HandleResource(`/posts`, &EmployeeResource{lastID: 0})
-
-	// Start server
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
