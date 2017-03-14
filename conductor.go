@@ -1,33 +1,39 @@
 package conductor
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 )
 
-// ReadJSON reads data from request body to the interface provided.
-func ReadJSON(r *http.Request, data interface{}) error {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
+// A Component is a handler that wraps another handler
+type Component func(http.Handler) http.Handler
 
-	if err := json.Unmarshal(body, data); err != nil {
-		return err
-	}
-
-	return nil
+// A Conductor is a sequence of components
+type Conductor struct {
+	components []Component
 }
 
-// WriteJSON writes data as JSON to the output writer.
-// Data expected to be able to be marshaled to JSON.
-func WriteJSON(w http.ResponseWriter, data interface{}) error {
-	output, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		return err
+// New returns a new Conductor instance
+func New() *Conductor { return &Conductor{} }
+
+// Use adds a Component to the sequence of components
+func (c *Conductor) Use(component ...Component) {
+	c.components = append(c.components, component...)
+}
+
+// Handler returns a handler that wraps h with the component sequence
+func (c *Conductor) Handler(h http.Handler) http.Handler {
+	if h == nil {
+		h = http.DefaultServeMux
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(output)
-	return nil
+
+	for i := range c.components {
+		h = c.components[len(c.components)-1-i](h)
+	}
+
+	return h
+}
+
+// HandlerFunc returns a handler that wraps fn with the component sequence
+func (c *Conductor) HandlerFunc(fn http.HandlerFunc) http.Handler {
+	return c.Handler(fn)
 }
