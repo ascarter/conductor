@@ -67,7 +67,7 @@ func goodbyeHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	// Define middleware
 	c := conductor.New()
-	c.Use(mw)
+	c.Use(logRequest)
 
 	// Add routes
 	http.Handle("/hello", c.HandlerFunc(helloHandler))
@@ -78,6 +78,16 @@ func main() {
 }
 
 ```
+
+# Components
+
+The following are components that work with conductor. In general, many existing handlers use the `Component` signature or can easily be wrapped to work.
+
+Component | Author | Description
+--------- | ------ | -----------
+[cors](https://github.com/rs/cors) | [Oliver Poitrey](https://github.com/rs) | [Cross Origin Resource Sharing (CORS) support](http://www.w3.org/TR/cors/)
+[requestid](https://github.com/ascarter/requestid) | [Andrew Carter](https://github.com/ascarter) | Add UUID request id
+[requestlog](https://github.com/ascarter/requestlog) | [Andrew Carter](https://github.com/ascarter) | Log start and end of each request
 
 # References
 
