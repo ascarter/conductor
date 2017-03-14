@@ -30,7 +30,7 @@ func goodbyeHandler(w http.ResponseWriter, r *http.Request) {
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Running list handler")
-	params, ok := conductor.RouteParamsFromContext(r.Context())
+	params, ok := conductor.FromContext(r.Context())
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -50,7 +50,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 
 func paramHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Running posts handler")
-	params, ok := conductor.RouteParamsFromContext(r.Context())
+	params, ok := conductor.FromContext(r.Context())
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -69,9 +69,7 @@ func paramHandler(w http.ResponseWriter, r *http.Request) {
 func Example() {
 	mux := conductor.NewRouter()
 
-	// Define middleware in order
-	mux.Use(conductor.RequestIDComponent())
-	mux.Use(conductor.DefaultRequestLogComponent)
+	// Define middleware
 	mux.Use(conductor.ComponentFunc(mw))
 
 	// Add simple routes

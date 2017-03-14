@@ -101,7 +101,7 @@ type testResponse struct {
 func testHandler(w http.ResponseWriter, r *http.Request) {
 	response := testResponse{Method: r.Method, Path: r.URL.Path}
 
-	matches, ok := RouteParamsFromContext(r.Context())
+	matches, ok := FromContext(r.Context())
 	if ok {
 		response.Matches = matches
 	}

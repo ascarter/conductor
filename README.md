@@ -25,9 +25,9 @@ import (
 
 func mw(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("middleware before")
+		log.Printf("Starting request %s\n", r.URL.Path)
 		h.ServeHTTP(w, r)
-		log.Println("middleware after")
+		log.Printf("Completed request%s\n", r.URL.Path)
 	})
 }
 
@@ -44,9 +44,7 @@ func goodbyeHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	router := conductor.NewRouter()
 
-	// Define middleware in order
-	router.Use(conductor.RequestIDComponent())
-	router.Use(conductor.DefaultRequestLogComponent)
+	// Define middleware
 	router.Use(conductor.ComponentFunc(mw))
 
 	// Add handlers
@@ -83,9 +81,9 @@ An example middleware:
 ```go
 	func logMiddleware(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Println("middleware before")
+			log.Printf("Starting request %s\n", r.URL.Path)
 			h.ServeHTTP(w, r)
-			log.Println("middleware after")
+			log.Printf("Completed request%s\n", r.URL.Path)
 		})
 	}
 ```
@@ -97,8 +95,6 @@ Middleware is added in order to a `Router` by the `Use` func:
 ```go
 	// Define middleware in order
 	router := conductor.NewRouter()
-	router.Use(conductor.RequestIDComponent())
-	router.Use(conductor.DefaultRequestLogComponent)
 	router.Use(conductor.ComponentFunc(mw))
 ```
 

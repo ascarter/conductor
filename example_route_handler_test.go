@@ -10,7 +10,7 @@ import (
 
 func postsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Running posts handler")
-	params, ok := conductor.RouteParamsFromContext(r.Context())
+	params, ok := conductor.FromContext(r.Context())
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -27,17 +27,14 @@ func postsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func Example_RouteHandler() {
-	mux := conductor.NewRouter()
-
-	// Define middleware in order
-	mux.Use(conductor.RequestIDComponent())
-	mux.Use(conductor.DefaultRequestLogComponent)
-
-	// Add routes
+	// Define routes
 	h := conductor.NewRouteHandler()
 	h.HandleRouteFunc(http.MethodGet, `/posts/:id`, postsHandler)
 	h.HandleRouteFunc(http.MethodGet, `/posts`, postsHandler)
 	h.HandleRouteFunc(http.MethodPost, `/posts`, postsHandler)
+
+	// Setup router
+	mux := conductor.NewRouter()
 	mux.Handle("/posts/", h)
 
 	// Start server
