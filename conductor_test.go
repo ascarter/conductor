@@ -1,76 +1,68 @@
 package conductor
 
 import (
-	"bytes"
-	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 )
 
-type testData struct {
-	ID    int    `json:"id"`
-	Label string `json:"label"`
+type testHandler struct {
+	msg string
 }
 
-func TestReadJSON(t *testing.T) {
-	v := testData{1, "foo"}
+func (h testHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, h.msg)
+}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		var data testData
-		if err := ReadJSON(r, &data); err != nil {
+func TestUse(t *testing.T) {
+	expected := "testrequest"
+
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, expected)
+	}
+
+	h := testHandler{expected}
+
+	mod := func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, "modified-")
+			h.ServeHTTP(w, r)
+		})
+	}
+
+	c := New()
+	c.Use(mod)
+
+	mux := http.NewServeMux()
+	mux.Handle("/testh", c.Handler(h))
+	mux.Handle("/testfn", c.HandlerFunc(fn))
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	testcases := []string{
+		"/testh",
+		"/testfn",
+	}
+
+	for _, tc := range testcases {
+		res, err := http.Get(server.URL + tc)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		if !reflect.DeepEqual(v, data) {
-			t.Errorf("%v != %v", v, data)
+		body, err := ioutil.ReadAll(res.Body)
+		defer res.Body.Close()
+
+		if err != nil {
+			t.Fatal(tc, err)
 		}
-	}
 
-	inBody, err := json.MarshalIndent(&v, "", "\t")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	buf := bytes.NewBuffer(inBody)
-	req, err := http.NewRequest("GET", "/", buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	w := httptest.NewRecorder()
-	handler(w, req)
-}
-
-func TestWriteJSON(t *testing.T) {
-	data := testData{1, "foo"}
-
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		if err := WriteJSON(w, data); err != nil {
-			t.Fatal(err)
+		expectedMessage := fmt.Sprintf("modified-%s", expected)
+		if string(body) != expectedMessage {
+			t.Errorf("%s: %v != %v", tc, string(body), expectedMessage)
 		}
-	}
-
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	w := httptest.NewRecorder()
-	handler(w, req)
-
-	resp := w.Result()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var v testData
-	if err := json.Unmarshal(body, &v); err != nil {
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(v, data) {
-		t.Errorf("%v != %v", v, data)
 	}
 }
